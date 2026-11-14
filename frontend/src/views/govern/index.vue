@@ -4,6 +4,7 @@
       <div>
         <h2>存储治理管理</h2>
         <p class="page-desc">维护存储治理策略的输入、执行约束与结果记录，为存储生命周期管理提供可验证的数据工程流程。</p>
+        <VersionBadge class="page-version" :view-version="viewVersion" />
       </div>
       <div class="page-actions">
         <button class="btn primary" type="button" @click="openCreate">登记治理策略</button>
@@ -64,7 +65,7 @@
     </table>
 
     <footer class="page-foot">
-      <span>共 {{ total }} 条存储治理记录</span>
+      <span>共 {{ total }} 条存储治理记录 · 当前确认视图 v{{ viewVersion }}</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
   </section>
@@ -80,6 +81,7 @@ import {
   runAction as applyAction,
 } from '@/api/local-service'
 import type { EntryRow } from '@/data/types'
+import VersionBadge from '@/components/VersionBadge.vue'
 
 const meta = moduleMeta('govern')
 const columns = ["策略编号", "目标表名", "治理类型", "冷热判定字段", "生命周期天数", "归档目标", "回收站保留", "执行频率"]
@@ -90,6 +92,7 @@ const stats = [{"label": "治理策略总数", "value": 0}, {"label": "已启用
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
+const viewVersion = ref(0)
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
 const statusSummary = computed(() =>
@@ -114,7 +117,9 @@ function openCreate() {
 
 function runAction(action: string, row: EntryRow) {
   errorMessage.value = ''
-  const result = applyAction(meta.key, Number(row.id), action)
+  const result = applyAction(meta.key, Number(row.id), action, {
+    expectedVersion: viewVersion.value,
+  })
   if (!result.ok) {
     errorMessage.value = result.message
     return
@@ -128,6 +133,7 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    viewVersion.value = payload.viewVersion
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '存储治理列表读取失败'
   }

@@ -4,6 +4,7 @@
       <div>
         <h2>运营概览</h2>
         <p class="page-desc">汇总各业务模块的关键指标，先看总量再看异常。</p>
+        <VersionBadge class="page-version" :view-version="viewVersion" />
       </div>
       <div class="page-actions">
         <button class="btn" type="button" @click="refresh">重新统计</button>
@@ -29,7 +30,7 @@
       </tbody>
     </table>
     <footer class="page-foot">
-      <span>数据保存在本机浏览器里，换浏览器或清缓存会回到示例数据</span>
+      <span>数据保存在本机浏览器里，换浏览器或清缓存会回到示例数据 · 当前确认视图 v{{ viewVersion }}</span>
     </footer>
   </section>
 </template>
@@ -39,14 +40,17 @@ import { onMounted, ref } from 'vue'
 
 import { loadOverview } from '@/api/local-service'
 import type { OverviewResult } from '@/data/types'
+import VersionBadge from '@/components/VersionBadge.vue'
 
 const cards = ref<OverviewResult['cards']>([])
 const moduleRows = ref<OverviewResult['modules']>([])
+const viewVersion = ref(0)
 
 function refresh() {
   const payload = loadOverview()
   cards.value = payload.cards
   moduleRows.value = payload.modules
+  viewVersion.value = payload.viewVersion
 }
 
 onMounted(refresh)

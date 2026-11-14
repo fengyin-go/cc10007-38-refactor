@@ -4,6 +4,7 @@
       <div>
         <h2>应用层发布管理</h2>
         <p class="page-desc">维护应用层数据发布的输入、执行约束与结果记录，为应用层发布提供可验证的数据工程流程。</p>
+        <VersionBadge class="page-version" :view-version="viewVersion" />
       </div>
       <div class="page-actions">
         <button class="btn primary" type="button" @click="openCreate">登记应用数据集</button>
@@ -64,7 +65,7 @@
     </table>
 
     <footer class="page-foot">
-      <span>共 {{ total }} 条应用层发布记录</span>
+      <span>共 {{ total }} 条应用层发布记录 · 当前确认视图 v{{ viewVersion }}</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
   </section>
@@ -80,6 +81,7 @@ import {
   runAction as applyAction,
 } from '@/api/local-service'
 import type { EntryRow } from '@/data/types'
+import VersionBadge from '@/components/VersionBadge.vue'
 
 const meta = moduleMeta('ads')
 const columns = ["数据集编号", "业务应用", "输出表名", "查询模板", "下游消费方", "接口协议", "刷新策略", "版本号"]
@@ -90,6 +92,7 @@ const stats = [{"label": "应用数据集总数", "value": 0}, {"label": "已发
 const rows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
+const viewVersion = ref(0)
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
 const statusSummary = computed(() =>
@@ -114,7 +117,9 @@ function openCreate() {
 
 function runAction(action: string, row: EntryRow) {
   errorMessage.value = ''
-  const result = applyAction(meta.key, Number(row.id), action)
+  const result = applyAction(meta.key, Number(row.id), action, {
+    expectedVersion: viewVersion.value,
+  })
   if (!result.ok) {
     errorMessage.value = result.message
     return
@@ -128,6 +133,7 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    viewVersion.value = payload.viewVersion
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '应用层发布列表读取失败'
   }

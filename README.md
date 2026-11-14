@@ -3,9 +3,10 @@
 离线版数仓分层建模工具，覆盖贴源层、明细层、汇总层、应用层的表结构设计、分区策略配置、质量规则编排与血缘关系管理，数据持久化到浏览器本地存储。
 
 这是一个**纯前端**管理平台：Vue 3 + Vite + TypeScript，仓库里没有后端服务。业务数据由
-`frontend/src/data/` 下的本地数据层提供：首次打开用示例数据播种，之后的登记、筛选与状态流转
-结果都持久化在浏览器 `localStorage` 里，刷新或重开浏览器都还在。dev server 已关掉自动打开页面，
-启动后按终端打印的地址手工打开。
+`frontend/src/data/` 下的版本化数据层提供：首次打开用示例数据播种，之后的登记、筛选与状态流转
+都以**不可变确认快照**的形式持久化在浏览器 `localStorage` 里，刷新或重开浏览器都还在。
+读侧永远只在某个已确认版本上查询，写侧通过原子提交推进新版本，关系修改与字段版本确认要么
+一起生效、要么都不生效。dev server 已关掉自动打开页面，启动后按终端打印的地址手工打开。
 
 ## 目录结构
 
@@ -13,9 +14,14 @@
 .
 ├── frontend/                 Vue 3 + Vite + TypeScript 前端（唯一运行单元）
 │   ├── src/views/            每个业务模块一个页面
-│   ├── src/api/local-service.ts   本地数据服务：列表、筛选、动作流转、导出
-│   ├── src/data/             模块元数据 / 示例数据 / localStorage 持久化
-│   ├── src/stores/           会话与筛选状态
+│   ├── src/api/local-service.ts   本地数据服务：快照查询、原子确认、导出、血缘路径
+│   ├── src/data/             版本化访问边界 / 模块元数据 / 示例数据
+│   │   ├── version-store.ts       不可变快照、原子提交、乐观并发、幂等、localStorage 持久化
+│   │   ├── validation.ts          读写两侧共用的统一校验入口
+│   │   ├── lineage.ts             血缘可达路径核对（在确认视图上做图遍历）
+│   │   ├── modules.ts / seed.ts / types.ts
+│   ├── src/components/       VersionBadge 等跨页面组件
+│   ├── scripts/verify/       一致性验证（快照、原子性、并发、幂等、刷新、旧存储迁移）
 │   └── vite.config.ts        dev server 配置（open: false，无 /api 代理）
 ├── .gitignore
 └── docker-compose.yml
@@ -68,7 +74,32 @@ npm run build
 - 字段、状态、动作与流转目标集中在 `frontend/src/data/modules.ts`；示例数据在
   `frontend/src/data/seed.ts`。
 - 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断。
-- 想回到初始数据：清掉浏览器里 `data-layer-studio:entries` 这一项，或调用 `resetModule(模块)`。
+- 读写两侧的入参校验统一走 `frontend/src/data/validation.ts` 的 `validate()` 入口，
+  返回 `{ ok, value/message }`，不再各写各的判断。
+- 想回到初始数据：清掉浏览器里 `data-layer-studio:versioned` 这一项，或调用
+  `resetModule(模块)`。旧键 `data-layer-studio:entries` 会在首次打开时自动迁移为
+  确认版本 v1，原数据不丢。
+
+## 一致性保证（已确认视图）
+
+- **不可变快照**：每次确认提交生成全新的 `DataSnapshot`（深冻结），读侧只在快照上查询，
+  编辑过程不会暴露「改了一半」的可变列表。
+- **原子提交**：一次提交里的多张表（血缘关系修改 + 字段版本确认）要么一起生效要么都不生效。
+- **乐观并发**：写请求携带读取时的 `expectedVersion`，基于过期视图的提交被明确拒绝，
+  不会覆盖新版本。
+- **幂等确认**：相同 `idempotencyKey` 的重复确认重放首次结果，不产生新版本；
+  行已处于目标状态时业务校验短路，同样不再推进版本。
+- **并行只读**：无关表各自取同一份快照并行查询，返回结果带 `viewVersion`；
+  页面用 `VersionBadge` 明确标注当前视图对应的确认版本，视图过期会提示而不是靠全局刷新掩盖。
+- **血缘回看**：`lineage.ts` 以血缘追踪为主对象，在确认视图上核对可达路径，
+  支持「仅已启用」与「含未确认关系」两种遍历范围，并对环路做了防护。
+
+一致性验证（不引入测试框架，仅用 esbuild 打包后由 Node 执行）：
+
+```bash
+cd frontend
+npm run verify
+```
 
 领域：数据工程
 子方向：数仓与数据湖

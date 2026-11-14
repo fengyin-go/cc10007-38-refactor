@@ -17,6 +17,7 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .app-head { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
 .page-head { display: flex; justify-content: space-between; align-items: flex-start; margin: 12px 0; }
 .page-desc { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+.page-version { margin-top: 8px; }
 .stat-row { display: flex; gap: 12px; margin-bottom: 12px; }
 .stat-card { flex: 1; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
 .stat-label { display: block; color: var(--muted); font-size: 12px; }
@@ -35,3 +36,17 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .error-text { color: #b42318; }
 .status-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 10px; font-size: 12px; color: var(--muted); }
 .legend-item { background: #eef2f7; border-radius: 999px; padding: 2px 10px; }
+.version-badge { display: inline-flex; align-items: center; gap: 6px; background: #eef6ff; border: 1px solid #b9d7ff; color: #175cd3; border-radius: 999px; padding: 3px 12px; font-size: 12px; }
+.version-badge__dot { width: 7px; height: 7px; border-radius: 50%; background: #1f6feb; }
+.version-badge--stale { background: #fff4eb; border-color: #f5c59b; color: #b54708; }
+.version-badge--stale .version-badge__dot { background: #f79009; }
+.lineage-panel { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+.lineage-panel h3 { margin: 0 0 8px; font-size: 14px; }
+.lineage-panel .filter-bar { margin-bottom: 8px; }
+.path-list { margin: 8px 0 0; padding-left: 0; list-style: none; font-size: 13px; }
+.path-list li { padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.path-tag { display: inline-block; border-radius: 4px; padding: 0 6px; font-size: 12px; margin-left: 6px; }
+.path-tag--confirmed { background: #e8f7ee; color: #067647; }
+.path-tag--unconfirmed { background: #fef3e8; color: #b54708; }
+.confirm-table { font-size: 12px; }
+.confirm-table th, .confirm-table td { white-space: nowrap; }
